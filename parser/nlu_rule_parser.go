@@ -1,36 +1,28 @@
-//nlu_rule_parser.go
-package main
+//parser/nlu_rule_parser.go
+package parser
 
 import (
-	"C"
 	"github.com/antlr/antlr4/runtime/Go/antlr"
-	"./nlu_rule_parser"
 	"fmt"
 	"time"
 	"encoding/json"
-	"os"
 )
 
 
 //export run_parser
-func run_parser(filename string) *C.char {
+func RunParser(filename string) string {
 	start := time.Now()
 	input, _ := antlr.NewFileStream(filename)
-	lexer := parser.NewAnnotationGrammarLexer(input)
+	lexer := NewAnnotationGrammarLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer,0)
-	p := parser.NewAnnotationGrammarParser(stream)
+	p := NewAnnotationGrammarParser(stream)
 	p.AddErrorListener(antlr.NewDiagnosticErrorListener(true))
 	p.BuildParseTrees = true
 	tree := p.Annotation()
-	listener := parser.NewNluRuleListener()
+	listener := NewNluRuleListener()
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
 	elapsed := time.Since(start)
 	fmt.Println("TIME", elapsed.Seconds())
 	parsed, _ := json.MarshalIndent(listener.ParsedRules, "", " ")
-	return C.CString(string(parsed))
-}
-
-func main() {
-	filename := os.Args[1]
-	fmt.Println(run_parser(filename))
+	return string(parsed)
 }
