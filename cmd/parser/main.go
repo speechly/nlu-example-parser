@@ -34,7 +34,7 @@ func main() {
 		}
 	}()
 
-	outCh := nlurules.ParseAsync(inputCh)
+	outCh := nlurules.ParseAsync(inputCh, false, false)
 
 	for u := range outCh {
 		fmt.Printf("Received utterance %+v\n", u)
