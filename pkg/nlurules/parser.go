@@ -11,7 +11,7 @@ import (
 //
 // TODO: combine logDiagnostics and verbose into a ternary log level.
 func ParseAsync(in <-chan string, logDiagnostics bool, verbose bool) <-chan Utterance {
-	listener := NewNluRuleListener()
+	listener := NewNluRuleListener(1, logDiagnostics)
 
 	go func() {
 		defer listener.Close()
