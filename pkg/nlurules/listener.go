@@ -14,17 +14,15 @@ type Utterance struct {
 }
 
 const (
-	// TODO: better names
-	IntentBioO = "o"
-	IntentBioB = "b"
-	IntentBioI = "i"
-
-	TextEmptySpace = " "
+	IntentTagBeginning = "b"
+	IntentTagInside    = "i"
+	IntentTagOutside   = "o"
+	TextEmptySpace     = " "
 )
 
 func NewUtterance() Utterance {
 	return Utterance{
-		CurrentIntentBio: IntentBioO,
+		CurrentIntentBio: IntentTagOutside,
 	}
 }
 
@@ -65,8 +63,8 @@ func (l *NluRuleListener) EnterText(c *parser.TextContext) {
 		newText["intent"] = l.utterance.CurrentIntent
 		newText["intent_bio"] = l.utterance.CurrentIntentBio
 
-		if l.utterance.CurrentIntentBio == IntentBioB {
-			l.utterance.CurrentIntentBio = IntentBioI
+		if l.utterance.CurrentIntentBio == IntentTagBeginning {
+			l.utterance.CurrentIntentBio = IntentTagInside
 		}
 	}
 
@@ -98,7 +96,7 @@ func (l *NluRuleListener) ExitEntity(c *parser.EntityContext) {
 
 func (l *NluRuleListener) EnterIntent_name(c *parser.Intent_nameContext) {
 	l.utterance.CurrentIntent = c.WORD().GetText()
-	l.utterance.CurrentIntentBio = IntentBioB
+	l.utterance.CurrentIntentBio = IntentTagBeginning
 }
 
 func (l *NluRuleListener) ExitReply(c *parser.ReplyContext) {
