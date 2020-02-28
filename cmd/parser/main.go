@@ -14,7 +14,7 @@ func main() {
 
 	fname := os.Args[1]
 
-	jsonFlag := flag.Bool("-json", true, "return results as json")
+	jsonFlag := flag.Bool("-json", false, "return results as json")
 	flag.Parse()
 
 	f, err := os.Open(fname)
