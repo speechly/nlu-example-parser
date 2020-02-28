@@ -7,6 +7,7 @@ type Utterance struct {
 
 	current_intent string
 	current_entity string
+	current_intent_bio string
 }
 
 func NewUtterance() Utterance {
@@ -14,6 +15,7 @@ func NewUtterance() Utterance {
 	var l Utterance
 	l.current_intent = ""
 	l.current_entity = ""
+	l.current_intent_bio = "o"
 	return l
 
 }
@@ -43,6 +45,10 @@ func (l *NluRuleListener) EnterText(c *parser.TextContext) {
 	}
 	if l.utterance.current_intent != "" {
 		new_text["intent"] = l.utterance.current_intent
+		new_text["intent_bio"] = l.utterance.current_intent_bio
+		if l.utterance.current_intent_bio == "b"{
+			l.utterance.current_intent_bio = "i"
+		}
 	}
 
 	l.utterance.Parsed = append(l.utterance.Parsed, new_text)
@@ -68,6 +74,7 @@ func (l *NluRuleListener) ExitEntity(c *parser.EntityContext) {
 
 func (l *NluRuleListener) EnterIntent_name(c *parser.Intent_nameContext) {
 	l.utterance.current_intent = c.WORD().GetText()
+	l.utterance.current_intent_bio = "b"
 }
 
 func (l *NluRuleListener) ExitReply(c *parser.ReplyContext) {
