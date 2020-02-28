@@ -6,7 +6,11 @@ import (
 	"speechly/nlu-rules-parser/pkg/parser"
 )
 
-func ParseAsync(in <-chan string) <-chan Utterance {
+// ParseAsync processes input strings in a streaming fashion.
+// It assumes that a single string passed through the input channel contains a parseable utterance.
+//
+// TODO: combine logDiagnostics and verbose into a ternary log level.
+func ParseAsync(in <-chan string, logDiagnostics bool, verbose bool) <-chan Utterance {
 	listener := NewNluRuleListener()
 
 	go func() {
@@ -21,8 +25,11 @@ func ParseAsync(in <-chan string) <-chan Utterance {
 			)
 
 			p := parser.NewAnnotationGrammarParser(stream)
-			p.AddErrorListener(antlr.NewDiagnosticErrorListener(true))
 			p.BuildParseTrees = true
+
+			if logDiagnostics {
+				p.AddErrorListener(antlr.NewDiagnosticErrorListener(verbose))
+			}
 
 			antlr.ParseTreeWalkerDefault.Walk(listener, p.Annotation())
 		}
