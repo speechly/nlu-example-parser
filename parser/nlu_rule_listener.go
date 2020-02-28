@@ -24,11 +24,13 @@ type NluRuleListener struct {
 	BaseAnnotationGrammarListener
 	ParsedRules []Utterance
 	utterance Utterance
+	ch chan Utterance
 
 }
 
 func (l *NluRuleListener) ExitUtterance(c *UtteranceContext) {
 
+	l.ch <- l.utterance
 	l.ParsedRules = append(l.ParsedRules, l.utterance)
 	l.utterance = NewUtterance()
 }
@@ -73,6 +75,14 @@ func (l *NluRuleListener) EnterIntent_name(c *Intent_nameContext) {
 
 func (l *NluRuleListener) ExitReply(c *ReplyContext) {
 	l.utterance.current_intent = ""
+}
+
+func (l *NluRuleListener) Utterances() <-chan Utterance {
+	return l.ch
+}
+
+func (l *NluRuleListener) Close() {
+	close(l.ch)
 }
 
 func NewNluRuleListener() *NluRuleListener {
