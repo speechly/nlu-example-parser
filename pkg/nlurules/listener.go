@@ -1,9 +1,8 @@
-// parser/nlu_rule_listener.go
-package parser
+package nlurules
 
+import "speechly/nlu-rules-parser/pkg/parser"
 
 type Utterance struct {
-
 	Parsed []map[string]string
 
 	current_intent string
@@ -19,61 +18,59 @@ func NewUtterance() Utterance {
 
 }
 
-
 type NluRuleListener struct {
-	BaseAnnotationGrammarListener
+	parser.BaseAnnotationGrammarListener
 	ParsedRules []Utterance
-	utterance Utterance
-	ch chan Utterance
-
+	utterance   Utterance
+	ch          chan Utterance
 }
 
-func (l *NluRuleListener) ExitUtterance(c *UtteranceContext) {
+func (l *NluRuleListener) ExitUtterance(c *parser.UtteranceContext) {
 
 	l.ch <- l.utterance
 	l.ParsedRules = append(l.ParsedRules, l.utterance)
 	l.utterance = NewUtterance()
 }
 
-func (l *NluRuleListener) EnterText(c *TextContext) {
+func (l *NluRuleListener) EnterText(c *parser.TextContext) {
 	text := c.GetText()
 
 	new_text := make(map[string]string)
 	new_text["text"] = text
 
-	if l.utterance.current_entity != ""{
+	if l.utterance.current_entity != "" {
 		new_text["entity"] = l.utterance.current_entity
 	}
-	if l.utterance.current_intent != ""{
+	if l.utterance.current_intent != "" {
 		new_text["intent"] = l.utterance.current_intent
 	}
 
 	l.utterance.Parsed = append(l.utterance.Parsed, new_text)
 }
 
-func (l *NluRuleListener) EnterIndent(c *IndentContext) {
+func (l *NluRuleListener) EnterIndent(c *parser.IndentContext) {
 	new_text := make(map[string]string)
 	new_text["text"] = " "
 	l.utterance.Parsed = append(l.utterance.Parsed, new_text)
 }
 
-func (l *NluRuleListener) EnterEntity(c *EntityContext) {
-	entity_name, ok := c.Entity_name().(*Entity_nameContext)
-		if !ok || entity_name == nil {
-			panic("failed to cast type") // TODO: graceful error handling
-		}
+func (l *NluRuleListener) EnterEntity(c *parser.EntityContext) {
+	entity_name, ok := c.Entity_name().(*parser.Entity_nameContext)
+	if !ok || entity_name == nil {
+		panic("failed to cast type") // TODO: graceful error handling
+	}
 	l.utterance.current_entity = entity_name.WORD().GetText()
 }
 
-func (l *NluRuleListener) ExitEntity(c *EntityContext) {
+func (l *NluRuleListener) ExitEntity(c *parser.EntityContext) {
 	l.utterance.current_entity = ""
 }
 
-func (l *NluRuleListener) EnterIntent_name(c *Intent_nameContext) {
+func (l *NluRuleListener) EnterIntent_name(c *parser.Intent_nameContext) {
 	l.utterance.current_intent = c.WORD().GetText()
 }
 
-func (l *NluRuleListener) ExitReply(c *ReplyContext) {
+func (l *NluRuleListener) ExitReply(c *parser.ReplyContext) {
 	l.utterance.current_intent = ""
 }
 
@@ -86,5 +83,7 @@ func (l *NluRuleListener) Close() {
 }
 
 func NewNluRuleListener() *NluRuleListener {
-	return new(NluRuleListener)
+	return &NluRuleListener{
+		ch: make(chan Utterance),
+	}
 }

@@ -1,14 +1,16 @@
-//main.go
 package main
+
 import (
-	"os"
 	"bufio"
-	"./parser"
 	"fmt"
+	"os"
+
+	"speechly/nlu-rules-parser/pkg/nlurules"
 )
 
 func main() {
 	fname := os.Args[1]
+
 	f, err := os.Open(fname)
 	if err != nil {
 		panic(err)
@@ -18,21 +20,25 @@ func main() {
 	inputCh := make(chan string)
 
 	go func() {
+		defer close(inputCh)
+
 		for scan.Scan() {
 			line := scan.Text()
 			fmt.Printf("Read rule from file: %s\n", line)
 			inputCh <- line
 		}
+
 		if err := scan.Err(); err != nil {
 			fmt.Fprintln(os.Stderr, "reading standard input:", err)
 			return
 		}
 	}()
-	defer close(inputCh)
-	outCh := parser.RunAsync(inputCh)
+
+	outCh := nlurules.ParseAsync(inputCh)
 
 	for u := range outCh {
 		fmt.Printf("Received utterance %+v\n", u)
 	}
+
 	os.Exit(0)
 }
