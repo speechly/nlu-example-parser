@@ -24,6 +24,6 @@ type Utterance struct {
 func NewUtterance() Utterance {
 	return Utterance{
 		IntentBIO: IntentTagOutside,
-		Nodes:     make([]Node, 1), // TODO: figure out how much we want to pre-allocate here
+		Nodes:     make([]Node, 0, 1), // TODO: figure out how much we want to pre-allocate here
 	}
 }
