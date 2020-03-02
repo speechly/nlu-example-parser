@@ -1,4 +1,4 @@
-## Speechly NLU rules parser
+## Speechly NLU example parser
 
 This repository contains the grammar definitions for Speechly NLU rules and a parser for these rules, written in Go.
 
