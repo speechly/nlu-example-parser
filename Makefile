@@ -15,6 +15,6 @@ antlr-4.8-complete.jar:
 	curl -o antlr-4.8-complete.jar https://www.antlr.org/download/antlr-4.8-complete.jar
 
 compile-grammar: antlr-4.8-complete.jar
-	$(ANTLR4) -Dlanguage=Go internal/grammar/AnnotationGrammar.g4
+	$(ANTLR4) -Dlanguage=Go -package grammar internal/grammar/AnnotationGrammar.g4
 
 .PHONY: build

@@ -1,4 +1,4 @@
-package parser
+package grammar
 
 // TODO: make these custom types
 const (

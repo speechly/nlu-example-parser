@@ -10,21 +10,21 @@ import (
 // It assumes that a single string passed through the input channel contains a parseable utterance.
 //
 // TODO: combine logDiagnostics and verbose into a ternary log level.
-func ParseAsync(in <-chan string, logDiagnostics bool, verbose bool) <-chan Utterance {
-	listener := NewNluRuleListener(1, logDiagnostics)
+func ParseAsync(in <-chan string, logDiagnostics bool, verbose bool) <-chan grammar.Utterance {
+	listener := grammar.NewNluRuleListener(1, logDiagnostics)
 
 	go func() {
 		defer listener.Close()
 
 		for str := range in {
 			stream := antlr.NewCommonTokenStream(
-				parser.NewAnnotationGrammarLexer(
+				grammar.NewAnnotationGrammarLexer(
 					antlr.NewInputStream(str),
 				),
 				0,
 			)
 
-			p := parser.NewAnnotationGrammarParser(stream)
+			p := grammar.NewAnnotationGrammarParser(stream)
 			p.BuildParseTrees = true
 
 			if logDiagnostics {

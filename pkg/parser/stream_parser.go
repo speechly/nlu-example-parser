@@ -10,7 +10,7 @@ import (
 )
 
 type StreamParser struct {
-	lis            *NluRuleListener
+	lis            *grammar.NluRuleListener
 	ch             chan string
 	done           chan struct{}
 	debug, verbose bool
@@ -18,7 +18,7 @@ type StreamParser struct {
 
 func NewStreamParser(bufSize uint64, debug bool, verbose bool) *StreamParser {
 	return &StreamParser{
-		lis:     NewNluRuleListener(bufSize, debug),
+		lis:     grammar.NewNluRuleListener(bufSize, debug),
 		ch:      make(chan string, bufSize),
 		done:    make(chan struct{}),
 		debug:   debug,
@@ -41,13 +41,13 @@ func (s *StreamParser) Start(ctx context.Context) error {
 				}
 
 				stream := antlr.NewCommonTokenStream(
-					parser.NewAnnotationGrammarLexer(
+					grammar.NewAnnotationGrammarLexer(
 						antlr.NewInputStream(str),
 					),
 					0,
 				)
 
-				p := parser.NewAnnotationGrammarParser(stream)
+				p := grammar.NewAnnotationGrammarParser(stream)
 				p.BuildParseTrees = true
 
 				if s.debug {
@@ -84,6 +84,6 @@ func (s *StreamParser) Write(ctx context.Context, line string) error {
 	}
 }
 
-func (s *StreamParser) Results() <-chan Utterance {
+func (s *StreamParser) Results() <-chan grammar.Utterance {
 	return s.lis.Utterances()
 }
