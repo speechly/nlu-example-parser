@@ -29,7 +29,7 @@ import (
 	"context"
 	"fmt"
 
-	"speechly/nlu-rules-parser/pkg/parser"
+	"speechly/nlu-example-parser/pkg/parser"
 )
 
 const (
