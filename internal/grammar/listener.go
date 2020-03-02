@@ -10,14 +10,18 @@ type NluRuleListener struct {
 	utterance Utterance
 	debug     bool
 	output    chan Utterance
+	listening bool
 	lock      sync.Mutex
+	bufSize   uint64
 }
 
 func NewNluRuleListener(bufSize uint64, debug bool) *NluRuleListener {
 	return &NluRuleListener{
 		output:    make(chan Utterance, bufSize),
 		utterance: NewUtterance(),
+		bufSize:   bufSize,
 		debug:     debug,
+		listening: true,
 	}
 }
 
@@ -76,11 +80,17 @@ func (l *NluRuleListener) ExitEntity(c *EntityContext) {
 }
 
 func (l *NluRuleListener) EnterIntent_name(c *Intent_nameContext) {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
 	l.utterance.Intent = c.WORD().GetText()
 	l.utterance.IntentBIO = IntentTagBeginning
 }
 
 func (l *NluRuleListener) ExitReply(c *ReplyContext) {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
 	l.utterance.Intent = ""
 }
 
