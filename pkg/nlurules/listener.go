@@ -7,10 +7,10 @@ import (
 )
 
 type Utterance struct {
-	Parsed           []map[string]string
-	CurrentIntent    string
-	CurrentEntity    string
-	CurrentIntentBio string
+	Parsed           []map[string]string `json:"parsed"`
+	CurrentIntent    string				 `json:"-"`
+	CurrentEntity    string				 `json:"-"`
+	CurrentIntentBio string				 `json:"-"`
 }
 
 const (

@@ -4,14 +4,18 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"flag"
+	"encoding/json"
 
 	"speechly/nlu-rules-parser/pkg/nlurules"
 )
 
 func main() {
-	fname := os.Args[1]
 
-	f, err := os.Open(fname)
+	inputFileFlag := flag.String("input_file", "", "input file name")
+	flag.Parse()
+
+	f, err := os.Open(*inputFileFlag)
 	if err != nil {
 		panic(err)
 	}
@@ -24,12 +28,10 @@ func main() {
 
 		for scan.Scan() {
 			line := scan.Text()
-			fmt.Printf("Read rule from file: %s\n", line)
 			inputCh <- line
 		}
 
 		if err := scan.Err(); err != nil {
-			fmt.Fprintln(os.Stderr, "reading standard input:", err)
 			return
 		}
 	}()
@@ -37,7 +39,12 @@ func main() {
 	outCh := nlurules.ParseAsync(inputCh, false, false)
 
 	for u := range outCh {
-		fmt.Printf("Received utterance %+v\n", u)
+
+		out, err := json.Marshal(u)
+			if err != nil {
+				os.Exit(1)
+			}
+			fmt.Println(string(out))
 	}
 
 	os.Exit(0)
