@@ -1,7 +1,6 @@
-// Code generated from ../AnnotationGrammar.g4 by ANTLR 4.8. DO NOT EDIT.
+// Code generated from internal/grammar/AnnotationGrammar.g4 by ANTLR 4.8. DO NOT EDIT.
 
-package parser // AnnotationGrammar
-
+package grammar // AnnotationGrammar
 import "github.com/antlr/antlr4/runtime/Go/antlr"
 
 // BaseAnnotationGrammarListener is a complete listener for a parse tree produced by AnnotationGrammarParser.

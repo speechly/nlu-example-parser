@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"os"
 
-	"speechly/nlu-rules-parser/pkg/nlurules"
+	"speechly/nlu-example-parser/pkg/parser"
 )
 
 var (
@@ -43,7 +43,7 @@ func main() {
 	defer cancel()
 
 	scan := bufio.NewScanner(f)
-	parser := nlurules.NewStreamParser(bufSize, *debugFlag, *debugFlag)
+	parser := parser.NewStreamParser(bufSize, *debugFlag, *debugFlag)
 
 	go func() {
 		if err := parser.Start(ctx); err != nil {

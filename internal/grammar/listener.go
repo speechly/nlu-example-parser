@@ -1,10 +1,8 @@
-package nlurules
+package grammar
 
 import (
 	"fmt"
 	"sync"
-
-	"speechly/nlu-rules-parser/pkg/parser"
 )
 
 const (
@@ -12,7 +10,7 @@ const (
 )
 
 type NluRuleListener struct {
-	parser.BaseAnnotationGrammarListener
+	BaseAnnotationGrammarListener
 	utterance Utterance
 	debug     bool
 	output    chan Utterance
@@ -27,7 +25,7 @@ func NewNluRuleListener(bufSize uint64, debug bool) *NluRuleListener {
 	}
 }
 
-func (l *NluRuleListener) ExitUtterance(c *parser.UtteranceContext) {
+func (l *NluRuleListener) ExitUtterance(c *UtteranceContext) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 
@@ -35,7 +33,7 @@ func (l *NluRuleListener) ExitUtterance(c *parser.UtteranceContext) {
 	l.utterance = NewUtterance()
 }
 
-func (l *NluRuleListener) EnterText(c *parser.TextContext) {
+func (l *NluRuleListener) EnterText(c *TextContext) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 
@@ -59,7 +57,7 @@ func (l *NluRuleListener) EnterText(c *parser.TextContext) {
 	l.utterance.Nodes = append(l.utterance.Nodes, node)
 }
 
-func (l *NluRuleListener) EnterIndent(c *parser.IndentContext) {
+func (l *NluRuleListener) EnterIndent(c *IndentContext) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 
@@ -71,12 +69,12 @@ func (l *NluRuleListener) EnterIndent(c *parser.IndentContext) {
 	)
 }
 
-func (l *NluRuleListener) EnterEntity(c *parser.EntityContext) {
+func (l *NluRuleListener) EnterEntity(c *EntityContext) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 
 	e := c.Entity_name()
-	entityName, ok := e.(*parser.Entity_nameContext)
+	entityName, ok := e.(*Entity_nameContext)
 
 	if (!ok || entityName == nil) && l.debug {
 		fmt.Printf("failed to parse entity name: %+v\n", e)
@@ -86,19 +84,19 @@ func (l *NluRuleListener) EnterEntity(c *parser.EntityContext) {
 	l.utterance.Entity = entityName.WORD().GetText()
 }
 
-func (l *NluRuleListener) ExitEntity(c *parser.EntityContext) {
+func (l *NluRuleListener) ExitEntity(c *EntityContext) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 
 	l.utterance.Entity = ""
 }
 
-func (l *NluRuleListener) EnterIntent_name(c *parser.Intent_nameContext) {
+func (l *NluRuleListener) EnterIntent_name(c *Intent_nameContext) {
 	l.utterance.Intent = c.WORD().GetText()
 	l.utterance.IntentBIO = IntentTagBeginning
 }
 
-func (l *NluRuleListener) ExitReply(c *parser.ReplyContext) {
+func (l *NluRuleListener) ExitReply(c *ReplyContext) {
 	l.utterance.Intent = ""
 }
 

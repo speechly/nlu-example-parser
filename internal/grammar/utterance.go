@@ -1,4 +1,4 @@
-package nlurules
+package grammar
 
 // TODO: make these custom types
 const (
