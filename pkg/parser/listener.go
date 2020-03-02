@@ -1,10 +1,10 @@
-package nlurules
+package parser
 
 import (
 	"fmt"
 	"sync"
 
-	"speechly/nlu-rules-parser/pkg/parser"
+	"speechly/nlu-example-parser/internal/grammar"
 )
 
 const (

@@ -1,10 +1,10 @@
-package nlurules
+package parser
 
 import (
 	"context"
 	"errors"
 
-	"speechly/nlu-rules-parser/pkg/parser"
+	"speechly/nlu-example-parser/internal/grammar"
 
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 )

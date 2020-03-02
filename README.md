@@ -29,7 +29,7 @@ import (
 	"context"
 	"fmt"
 
-	"speechly/nlu-rules-parser/pkg/nlurules"
+	"speechly/nlu-rules-parser/pkg/parser"
 )
 
 const (
@@ -44,7 +44,7 @@ func main() {
 	ctx := context.Background()
 
 	// Create a new parser.
-	p := nlurules.NewStreamParser(bufSize, debug, verbose)
+	p := parser.NewStreamParser(bufSize, debug, verbose)
 
 	// Start the parser.
 	if err := p.Start(ctx); err != nil {

@@ -1,9 +1,9 @@
-package nlurules
+package parser
 
 import (
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 
-	"speechly/nlu-rules-parser/pkg/parser"
+	"speechly/nlu-example-parser/internal/grammar"
 )
 
 // ParseAsync processes input strings in a streaming fashion.

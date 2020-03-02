@@ -1,4 +1,4 @@
-package nlurules
+package parser
 
 // TODO: make these custom types
 const (
