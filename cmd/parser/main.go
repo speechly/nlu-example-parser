@@ -2,49 +2,80 @@ package main
 
 import (
 	"bufio"
+	"context"
+	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
-	"flag"
-	"encoding/json"
 
 	"speechly/nlu-rules-parser/pkg/nlurules"
 )
 
-func main() {
+var (
+	inputFileFlag = flag.String("input_file", "", "input file name")
+	bufSizeFlag   = flag.Uint64("bufsize", 100, "size of the buffer with input file lines")
+	debugFlag     = flag.Bool("debug", false, "enable debug output")
+)
 
-	inputFileFlag := flag.String("input_file", "", "input file name")
+func main() {
 	flag.Parse()
 
-	f, err := os.Open(*inputFileFlag)
-	if err != nil {
-		panic(err)
+	filename := *inputFileFlag
+	if filename == "" {
+		flag.Usage()
+		os.Exit(1)
 	}
 
+	bufSize := *bufSizeFlag
+	if bufSize < 1 {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	f, err := os.Open(filename)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+	defer f.Close() // nolint: errcheck
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	scan := bufio.NewScanner(f)
-	inputCh := make(chan string)
+	parser := nlurules.NewStreamParser(bufSize, *debugFlag, *debugFlag)
 
 	go func() {
-		defer close(inputCh)
+		if err := parser.Start(ctx); err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			os.Exit(1)
+		}
+
+		defer parser.Stop(ctx) // nolint: errcheck
 
 		for scan.Scan() {
 			line := scan.Text()
-			inputCh <- line
+
+			if err := parser.Write(ctx, line); err != nil {
+				fmt.Fprintln(os.Stderr, err.Error())
+				os.Exit(1)
+			}
 		}
 
 		if err := scan.Err(); err != nil {
-			return
+			fmt.Fprintln(os.Stderr, err.Error())
+			os.Exit(1)
 		}
 	}()
 
-	outCh := nlurules.ParseAsync(inputCh, false, false)
-
-	for u := range outCh {
-
+	for u := range parser.Results() {
 		out, err := json.Marshal(u)
-			if err != nil {
-				os.Exit(1)
-			}
-			fmt.Println(string(out))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			os.Exit(1)
+		}
+
+		fmt.Fprintln(os.Stdout, string(out))
 	}
 
 	os.Exit(0)

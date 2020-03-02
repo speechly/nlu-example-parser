@@ -2,111 +2,110 @@ package nlurules
 
 import (
 	"fmt"
+	"sync"
 
 	"speechly/nlu-rules-parser/pkg/parser"
 )
 
-type Utterance struct {
-	Parsed           []map[string]string `json:"parsed"`
-	CurrentIntent    string				 `json:"-"`
-	CurrentEntity    string				 `json:"-"`
-	CurrentIntentBio string				 `json:"-"`
-}
-
 const (
-	IntentTagBeginning = "b"
-	IntentTagInside    = "i"
-	IntentTagOutside   = "o"
-	TextEmptySpace     = " "
+	TextEmptySpace = " "
 )
-
-func NewUtterance() Utterance {
-	return Utterance{
-		CurrentIntentBio: IntentTagOutside,
-	}
-}
 
 type NluRuleListener struct {
 	parser.BaseAnnotationGrammarListener
-	ParsedRules []Utterance
-	utterance   Utterance
-	debug       bool
-	ch          chan Utterance
+	utterance Utterance
+	debug     bool
+	output    chan Utterance
+	lock      sync.Mutex
 }
 
 func NewNluRuleListener(bufSize uint64, debug bool) *NluRuleListener {
 	return &NluRuleListener{
-		ch: make(chan Utterance, bufSize),
+		output:    make(chan Utterance, bufSize),
+		utterance: NewUtterance(),
+		debug:     debug,
 	}
 }
 
 func (l *NluRuleListener) ExitUtterance(c *parser.UtteranceContext) {
-	// TODO: make listener a per-utterance setup?
-	l.ch <- l.utterance
+	l.lock.Lock()
+	defer l.lock.Unlock()
 
-	// TODO: this will eat a lot of memory
-	l.ParsedRules = append(l.ParsedRules, l.utterance)
-
+	l.output <- l.utterance
 	l.utterance = NewUtterance()
 }
 
 func (l *NluRuleListener) EnterText(c *parser.TextContext) {
-	newText := map[string]string{
-		"text": c.GetText(),
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
+	node := Node{
+		Text: c.GetText(),
 	}
 
-	if l.utterance.CurrentEntity != "" {
-		newText["entity"] = l.utterance.CurrentEntity
+	if l.utterance.Entity != "" {
+		node.Entity = l.utterance.Entity
 	}
 
-	if l.utterance.CurrentIntent != "" {
-		newText["intent"] = l.utterance.CurrentIntent
-		newText["intent_bio"] = l.utterance.CurrentIntentBio
+	if l.utterance.Intent != "" {
+		node.Intent = l.utterance.Intent
+		node.IntentBIO = l.utterance.IntentBIO
 
-		if l.utterance.CurrentIntentBio == IntentTagBeginning {
-			l.utterance.CurrentIntentBio = IntentTagInside
+		if l.utterance.IntentBIO == IntentTagBeginning {
+			l.utterance.IntentBIO = IntentTagInside
 		}
 	}
 
-	l.utterance.Parsed = append(l.utterance.Parsed, newText)
+	l.utterance.Nodes = append(l.utterance.Nodes, node)
 }
 
 func (l *NluRuleListener) EnterIndent(c *parser.IndentContext) {
-	l.utterance.Parsed = append(
-		l.utterance.Parsed,
-		map[string]string{
-			"text": TextEmptySpace,
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
+	l.utterance.Nodes = append(
+		l.utterance.Nodes,
+		Node{
+			Text: TextEmptySpace,
 		},
 	)
 }
 
 func (l *NluRuleListener) EnterEntity(c *parser.EntityContext) {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
 	e := c.Entity_name()
 	entityName, ok := e.(*parser.Entity_nameContext)
+
 	if (!ok || entityName == nil) && l.debug {
 		fmt.Printf("failed to parse entity name: %+v\n", e)
+		return
 	}
 
-	l.utterance.CurrentEntity = entityName.WORD().GetText()
+	l.utterance.Entity = entityName.WORD().GetText()
 }
 
 func (l *NluRuleListener) ExitEntity(c *parser.EntityContext) {
-	l.utterance.CurrentEntity = ""
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
+	l.utterance.Entity = ""
 }
 
 func (l *NluRuleListener) EnterIntent_name(c *parser.Intent_nameContext) {
-	l.utterance.CurrentIntent = c.WORD().GetText()
-	l.utterance.CurrentIntentBio = IntentTagBeginning
+	l.utterance.Intent = c.WORD().GetText()
+	l.utterance.IntentBIO = IntentTagBeginning
 }
 
 func (l *NluRuleListener) ExitReply(c *parser.ReplyContext) {
-	l.utterance.CurrentIntent = ""
+	l.utterance.Intent = ""
 }
 
 func (l *NluRuleListener) Utterances() <-chan Utterance {
-	return l.ch
+	return l.output
 }
 
 func (l *NluRuleListener) Close() {
-	close(l.ch)
+	close(l.output)
 }
