@@ -57,18 +57,6 @@ func (l *NluRuleListener) EnterText(c *TextContext) {
 	l.utterance.Nodes = append(l.utterance.Nodes, node)
 }
 
-func (l *NluRuleListener) EnterIndent(c *IndentContext) {
-	l.lock.Lock()
-	defer l.lock.Unlock()
-
-	l.utterance.Nodes = append(
-		l.utterance.Nodes,
-		Node{
-			Text: TextEmptySpace,
-		},
-	)
-}
-
 func (l *NluRuleListener) EnterEntity(c *EntityContext) {
 	l.lock.Lock()
 	defer l.lock.Unlock()

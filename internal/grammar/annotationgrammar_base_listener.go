@@ -44,12 +44,6 @@ func (s *BaseAnnotationGrammarListener) EnterText(ctx *TextContext) {}
 // ExitText is called when production text is exited.
 func (s *BaseAnnotationGrammarListener) ExitText(ctx *TextContext) {}
 
-// EnterIndent is called when production indent is entered.
-func (s *BaseAnnotationGrammarListener) EnterIndent(ctx *IndentContext) {}
-
-// ExitIndent is called when production indent is exited.
-func (s *BaseAnnotationGrammarListener) ExitIndent(ctx *IndentContext) {}
-
 // EnterEntity is called when production entity is entered.
 func (s *BaseAnnotationGrammarListener) EnterEntity(ctx *EntityContext) {}
 
