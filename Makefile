@@ -4,16 +4,22 @@ GOOS			:= darwin
 GOARCH		:= amd64
 GONAME		:= ./bin/parser
 
-all: compile-grammar test build
+all: compile-grammar test build verify
 .PHONY: all
 
 test:
 	CGO_ENABLED=1 go test -race -cover -covermode=atomic -v $(GOPKGS)
 .PHONY: test
 
-build:
+verify: $(GONAME)
+	# Extra `./` here, because GONAME can be specified as a name, not a path
+	./$(GONAME) -input_file_path ./examples/test_multi_intent_data.md | diff - test/golden.json
+.PHONY: verify
+
+build: $(GONAME)
+
+$(GONAME): compile-grammar
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(GONAME) ./cmd/parser
-.PHONY: build
 
 compile-grammar: $(ANTLR_JAR)
 	java -jar $(ANTLR_JAR) -Dlanguage=Go -package grammar internal/grammar/AnnotationGrammar.g4

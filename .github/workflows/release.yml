@@ -31,6 +31,7 @@ jobs:
         run: |
           make test && \
           make build -e && \
+          make verify -e && \
           tar -czvf ${GONAME}.tar.gz ${GONAME}
       - name: "Upload build artifact"
         uses: actions/upload-artifact@v1
