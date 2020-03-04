@@ -11,10 +11,14 @@ test:
 	CGO_ENABLED=1 go test -race -cover -covermode=atomic -v $(GOPKGS)
 .PHONY: test
 
-verify: $(GONAME)
+verify: static-build
 	# Extra `./` here, because GONAME can be specified as a name, not a path
-	./$(GONAME) -input_file_path ./examples/test_multi_intent_data.md | diff - test/golden.json
+	./bin/golden -input_file_path ./examples/test_multi_intent_data.md | diff - test/golden.json
 .PHONY: verify
+
+static-build:
+	CGO_ENABLED=0 go build -o ./bin/golden ./cmd/parser
+.PHONY: static-build
 
 build: $(GONAME)
 
