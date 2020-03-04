@@ -5,10 +5,6 @@ import (
 	"sync"
 )
 
-const (
-	TextEmptySpace = " "
-)
-
 type NluRuleListener struct {
 	BaseAnnotationGrammarListener
 	utterance Utterance
