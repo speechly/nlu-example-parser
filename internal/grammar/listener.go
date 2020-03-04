@@ -64,8 +64,11 @@ func (l *NluRuleListener) EnterEntity(c *EntityContext) {
 	e := c.Entity_name()
 	entityName, ok := e.(*Entity_nameContext)
 
-	if (!ok || entityName == nil) && l.debug {
-		fmt.Printf("failed to parse entity name: %+v\n", e)
+	if !ok || entityName == nil {
+		if l.debug {
+			fmt.Printf("failed to parse entity name: %+v\n", e)
+		}
+
 		return
 	}
 
@@ -83,7 +86,16 @@ func (l *NluRuleListener) EnterIntent_name(c *Intent_nameContext) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 
-	l.utterance.Intent = c.WORD().GetText()
+	w := c.WORD()
+	if w == nil {
+		if l.debug {
+			fmt.Printf("failed to parse intent name: %+v\n", c)
+		}
+
+		return
+	}
+
+	l.utterance.Intent = w.GetText()
 	l.utterance.IntentBIO = IntentTagBeginning
 }
 
