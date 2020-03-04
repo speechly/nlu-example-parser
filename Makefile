@@ -12,7 +12,6 @@ test:
 .PHONY: test
 
 verify: static-build
-	# Extra `./` here, because GONAME can be specified as a name, not a path
 	./bin/golden -input_file_path ./examples/test_multi_intent_data.md | diff - test/golden.json
 .PHONY: verify
 
