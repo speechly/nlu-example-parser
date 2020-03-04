@@ -19,9 +19,6 @@ type AnnotationGrammarListener interface {
 	// EnterText is called when entering the text production.
 	EnterText(c *TextContext)
 
-	// EnterIndent is called when entering the indent production.
-	EnterIndent(c *IndentContext)
-
 	// EnterEntity is called when entering the entity production.
 	EnterEntity(c *EntityContext)
 
@@ -45,9 +42,6 @@ type AnnotationGrammarListener interface {
 
 	// ExitText is called when exiting the text production.
 	ExitText(c *TextContext)
-
-	// ExitIndent is called when exiting the indent production.
-	ExitIndent(c *IndentContext)
 
 	// ExitEntity is called when exiting the entity production.
 	ExitEntity(c *EntityContext)
