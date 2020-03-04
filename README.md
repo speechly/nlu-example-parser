@@ -20,6 +20,8 @@ make build
 
 #### As a library
 
+##### StreamingParser
+
 You can use the streaming version of a parser in your Go program the following way:
 
 ```golang
@@ -66,5 +68,61 @@ func main() {
 	for u := range p.Results() {
 		fmt.Printf("Received utterance %+v\n", u)
 	}
+}
+```
+
+##### IOParser
+
+You can use the `io.ReadWriteCloser` version of a parser in your Go program the following way:
+
+```golang
+package main
+
+import (
+	"fmt"
+	"io"
+	"os"
+	"strings"
+	"sync"
+
+	"speechly/nlu-example-parser/pkg/parser"
+)
+
+const (
+	bufSize       = 10
+	parserBufSize = 10
+	debug         = false
+
+	testUtterance = "*change change the [kitchen door    knobs](object)! *_ and *remove remove  the [table](object)\n"
+)
+
+func main() {
+	var wg sync.WaitGroup
+
+	r := strings.NewReader(testUtterance)
+	parser := parser.NewIOParser(bufSize, parserBufSize, debug)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer parser.Close()
+
+		if _, err := io.Copy(parser, r); err != nil && err != io.EOF {
+			fmt.Fprintf(os.Stderr, "parser encountered an error: %s\n", err.Error())
+			os.Exit(1)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		if _, err := io.Copy(os.Stdout, parser); err != nil && err != io.EOF {
+			fmt.Fprintf(os.Stderr, "parser encountered an error: %s\n", err.Error())
+		}
+	}()
+
+	wg.Wait()
+	os.Exit(0)
 }
 ```
