@@ -8,7 +8,7 @@ all: compile-grammar test build
 .PHONY: all
 
 test:
-	go test -race -cover -covermode=atomic -v $(GOPKGS)
+	CGO_ENABLED=1 go test -race -cover -covermode=atomic -v $(GOPKGS)
 .PHONY: test
 
 build:
