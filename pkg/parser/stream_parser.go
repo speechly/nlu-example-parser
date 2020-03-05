@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"speechly/nlu-example-parser/internal/grammar"
+	"github.com/speechly/nlu-example-parser/internal/grammar"
 )
 
 type StreamParser struct {

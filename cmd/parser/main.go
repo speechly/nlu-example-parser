@@ -7,7 +7,7 @@ import (
 	"io"
 	"os"
 
-	"speechly/nlu-example-parser/pkg/parser"
+	"github.com/speechly/nlu-example-parser/pkg/parser"
 
 	"golang.org/x/sync/errgroup"
 )

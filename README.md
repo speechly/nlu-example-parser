@@ -1,26 +1,115 @@
-## Speechly NLU example parser
+# Speechly NLU example parser
 
-This repository contains the grammar definitions for Speechly NLU rules and a parser for these rules, written in Go.
+This repository contains the grammar definitions for Speechly NLU examples and an AST parser for these rules, written in Go.
 
-The parser can be used as a standalone command-line client or included in other Go projects as a dependency.
+The parser can be used as a standalone command-line client or included in other Go projects as a library.
 
-### Usage
+## Usage
 
-#### Command-line interface
+### CLI
 
-In order to use the CLI you can build it using Make and run it against [some example rules](examples/test_multi_intent_data.md):
+Get the parser, a file with examples and run it:
 
 ```sh
-# Compile the binary
-make build
-
-# Run it against the examples
-./bin/parser ./examples/test_multi_intent_data.md
+nlu-example-parser -input-file-path nlu-examples.md > output.json
 ```
 
-#### As a library
+More CLI options available, you can tune the performance / memory usage or enable debug output:
 
-##### StreamingParser
+```
+Usage of nlu-example-parser:
+  -input_file_path string
+    path to input file (required)
+  -buffer_size_mb uint
+    size of the input and output buffers for input and output files (default 1)
+  -debug bool
+    enable debug output (default false)
+  -parser_buffer_size_lines uint
+    size of the buffer with parsed lines (default 100)
+```
+
+You can check out [some example rules](examples/test_multi_intent_data.md) and [sample output](test/golden.json).
+
+#### Installation
+
+Pre-built binaries are automatically compiled on every release - https://github.com/speechly/nlu-example-parser/releases, you can download them using e.g. `curl`:
+
+```sh
+$ export ARCH="amd64"
+$ export PLATFORM="darwin"
+$ export VERSION="v0.1.0"
+$ export FILENAME="speechly-nluexamplesparser-${VERSION}-${PLATFORM}-${ARCH}.tar.gz"
+$ curl -LJO https://github.com/speechly/nlu-example-parser/releases/download/${VERSION}/${FILENAME}
+$ tar -xzf ${FILENAME}
+```
+
+Alternatively, you can build it yourself, make sure you have `make` and `go` installed. Minimum support Go version is `1.13`.
+
+```sh
+# Clone the repo
+$ git clone git@github.com:speechly/nlu-example-parser.git
+$ cd nlu-example-parser
+
+# Compile the parser
+$ make build
+
+# Run it
+$ ./bin/parser -input-file-path ./examples/test_multi_intent_data.md
+```
+
+### Go library
+
+Get it using `go get`:
+
+```sh
+$ go get github.com/speechly/nlu-example-parser
+```
+
+The library exposes a couple of different parser API, you can choose which one you want to use.
+
+#### Parser
+
+The simplest version, you can use it the following way:
+
+```golang
+package main
+
+import (
+	"fmt"
+
+	"github.com/speechly/nlu-example-parser/pkg/parser"
+)
+
+const (
+	debug         = false
+	testUtterance = "*change change the [kitchen door    knobs](object)! *_ and *remove remove  the [table](object)"
+)
+
+func main() {
+	// Create a new parser.
+	p := parser.NewParser(debug)
+
+	// Consume the results.
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+
+		for u := range p.Results() {
+			fmt.Printf("Received utterance %+v\n", u)
+		}
+	}()
+
+	// Send some utterances.
+	for i := 0; i < 10; i++ {
+		p.Parse(testUtterance)
+	}
+
+	p.Close()
+	<-done
+}
+```
+
+#### StreamingParser
 
 You can use the streaming version of a parser in your Go program the following way:
 
@@ -31,7 +120,7 @@ import (
 	"context"
 	"fmt"
 
-	"speechly/nlu-example-parser/pkg/parser"
+	"github.com/speechly/nlu-example-parser/pkg/parser"
 )
 
 const (
@@ -71,7 +160,7 @@ func main() {
 }
 ```
 
-##### IOParser
+#### IOParser
 
 You can use the `io.ReadWriteCloser` version of a parser in your Go program the following way:
 
@@ -85,7 +174,7 @@ import (
 	"strings"
 	"sync"
 
-	"speechly/nlu-example-parser/pkg/parser"
+	"github.com/speechly/nlu-example-parser/pkg/parser"
 )
 
 const (
