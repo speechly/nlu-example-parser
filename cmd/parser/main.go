@@ -18,7 +18,7 @@ const (
 
 var (
 	inputFileFlag     = flag.String("input_file_path", "", "path to input file")
-	bufSizeFlag       = flag.Uint64("buffer_size_mb", 2, "size of the input and output buffers for input and output files")
+	bufSizeFlag       = flag.Uint64("buffer_size_mb", 1, "size of the input and output buffers for input and output files")
 	parserBufSizeFlag = flag.Uint64("parser_buffer_size_lines", 100, "size of the buffer with parsed lines")
 	debugFlag         = flag.Bool("debug", false, "enable debug output")
 )
@@ -56,19 +56,63 @@ func main() {
 		defer parser.Close() // nolint: errcheck
 		defer f.Close()      // nolint: errcheck
 
-		if _, err := io.Copy(parser, f); err != nil && err != io.EOF {
-			return err
-		}
+		var (
+			buf  = make([]byte, bufSize)
+			done = false
+		)
 
-		return nil
+		for {
+			n, err := f.Read(buf)
+			if err != nil {
+				if err != io.EOF {
+					return err
+				}
+
+				if n == 0 {
+					return nil
+				}
+
+				done = true
+			}
+
+			if _, err := parser.Write(buf[:n]); err != nil {
+				return err
+			}
+
+			if done {
+				return nil
+			}
+		}
 	})
 
 	g.Go(func() error {
-		if _, err := io.Copy(os.Stdout, parser); err != nil && err != io.EOF {
-			return err
-		}
+		var (
+			buf  = make([]byte, bufSize)
+			done = false
+		)
 
-		return nil
+		for {
+			n, err := parser.Read(buf)
+			if err != nil {
+				if err != io.EOF {
+					return err
+				}
+
+				if n == 0 {
+					return nil
+				}
+
+				done = true
+			}
+
+			if _, err := os.Stdout.Write(buf[:n]); err != nil {
+				return err
+			}
+
+			if done {
+				return nil
+			}
+		}
 	})
 
 	if err := g.Wait(); err != nil {
