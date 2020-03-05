@@ -32,35 +32,24 @@ func (p *IOParser) Read(b []byte) (int, error) {
 	p.outputLock.Lock()
 	defer p.outputLock.Unlock()
 
-	var (
-		buflen    = len(b)
-		outbuflen = len(p.outputBuffer)
-	)
+	buflen := len(b)
 
-	// If somehow we have exactly cap(b) in output buffer, just copy and return.
-	if outbuflen == buflen {
-		copy(b, p.outputBuffer)
-		p.outputBuffer = p.outputBuffer[:0]
-		return buflen, nil
+	// Quick escape for empty buffers.
+	if buflen == 0 {
+		return 0, nil
 	}
 
-	// If we have more than cap(b), copy, resize and return.
-	if outbuflen > buflen {
-		copy(b, p.outputBuffer[:buflen])
+	// Copy as much as we can from output buffer to b.
+	// `copy` guarantees that `min(len(src), len(dst))` elements will be copied.
+	written := copy(b, p.outputBuffer)
 
-		// Proper way to resize the slice without losing it's length
-		copy(p.outputBuffer, p.outputBuffer[buflen:])
-		p.outputBuffer = p.outputBuffer[:outbuflen-buflen]
+	// Proper way to re-slice output buffer, without losing its capacity.
+	c := copy(p.outputBuffer, p.outputBuffer[written:])
+	p.outputBuffer = p.outputBuffer[:c]
 
-		return buflen, nil
+	if written == buflen {
+		return written, nil
 	}
-
-	// Not enough data left in output buffer, so drain it unconditionally.
-	copy(b[:outbuflen], p.outputBuffer)
-	p.outputBuffer = p.outputBuffer[:0]
-
-	// Remember how much we can write more
-	written := outbuflen
 
 	// Loop until we have either exhausted the parser OR the buffer.
 	for {
@@ -74,29 +63,19 @@ func (p *IOParser) Read(b []byte) (int, error) {
 			return written, err
 		}
 
-		var (
-			datalen = len(data)
-			capleft = buflen - written
-		)
+		// Copy as much as we can from output buffer to b.
+		// `copy` guarantees that `min(len(src), len(dst))` elements will be copied.
+		c := copy(b[written:], data)
 
-		// We have exactly enough data to fill in the rest of the buffer, so copy and return.
-		if datalen == capleft {
-			copy(b[written:], data)
-			return buflen, nil
+		// Store any non-copied data in output buffer.
+		if c < len(data) {
+			p.outputBuffer = append(p.outputBuffer, data[c:]...)
 		}
 
-		// We have more data to write than we can fit in the output.
-		// Copy however many bytes we can from serialized result and store the rest in output buffer.
-		if datalen > capleft {
-			copy(b[written:], data[:capleft])
-			p.outputBuffer = append(p.outputBuffer, data[capleft:]...)
-			return buflen, nil
+		written += c
+		if written == buflen {
+			return written, nil
 		}
-
-		// We can fit more than we have available for writing.
-		// Write as much as we can and continue to the next iteration.
-		copy(b[written:], data)
-		written = written + datalen
 	}
 }
 
