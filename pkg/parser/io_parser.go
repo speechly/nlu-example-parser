@@ -21,6 +21,7 @@ type IOParser struct {
 	outputBuffer []byte
 	outputLock   sync.Mutex
 	parse        *Parser
+	bufSize      uint64
 }
 
 func NewIOParser(bufSize uint64, parserBufSize uint64, debug bool) *IOParser {
@@ -28,6 +29,7 @@ func NewIOParser(bufSize uint64, parserBufSize uint64, debug bool) *IOParser {
 		inputBuffer:  make([]byte, 0, bufSize),
 		outputBuffer: make([]byte, 0, bufSize),
 		parse:        NewBufferedParser(parserBufSize, debug),
+		bufSize:      bufSize,
 	}
 }
 
@@ -54,6 +56,10 @@ func (p *IOParser) Read(b []byte) (int, error) {
 		return written, nil
 	}
 
+	// A separate buffer for json serialization.
+	// TODO: switch outputBuffer to bytes.Buffer and get rid of this temporary solution altogether.
+	jsonbuf := bytes.NewBuffer(make([]byte, 0, p.bufSize))
+
 	// Loop until we have either exhausted the parser OR the buffer.
 	for {
 		res, more := <-p.parse.Results()
@@ -61,13 +67,15 @@ func (p *IOParser) Read(b []byte) (int, error) {
 			return written, io.EOF
 		}
 
-		data, err := json.Marshal(res)
-		if err != nil {
+		// Unlike `json.Marshal` `json.Encoder.Encode` appends a newline to encoded JSON, which is a requirement.
+		if err := json.NewEncoder(jsonbuf).Encode(res); err != nil {
 			return written, err
 		}
 
-		// Copy as much as we can from output buffer to b.
+		// Copy as much as we can from JSON buffer to b.
 		// `copy` guarantees that `min(len(src), len(dst))` elements will be copied.
+		data := jsonbuf.Bytes()
+
 		c := copy(b[written:], data)
 
 		// Store any non-copied data in output buffer.
@@ -75,6 +83,8 @@ func (p *IOParser) Read(b []byte) (int, error) {
 			p.outputBuffer = append(p.outputBuffer, data[c:]...)
 		}
 
+		// Update how much we written.
+		jsonbuf.Reset()
 		written += c
 		if written == buflen {
 			return written, nil
