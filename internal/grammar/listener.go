@@ -10,18 +10,14 @@ type NluRuleListener struct {
 	utterance Utterance
 	debug     bool
 	output    chan Utterance
-	listening bool
 	lock      sync.Mutex
-	bufSize   uint64
 }
 
 func NewNluRuleListener(bufSize uint64, debug bool) *NluRuleListener {
 	return &NluRuleListener{
 		output:    make(chan Utterance, bufSize),
 		utterance: NewUtterance(),
-		bufSize:   bufSize,
 		debug:     debug,
-		listening: true,
 	}
 }
 
