@@ -1,20 +1,26 @@
 package main
 
 import (
-	"bufio"
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 
 	"speechly/nlu-example-parser/pkg/parser"
+
+	"golang.org/x/sync/errgroup"
+)
+
+const (
+	bytesInMB = 1024 * 1024
 )
 
 var (
-	inputFileFlag = flag.String("input_file", "", "input file name")
-	bufSizeFlag   = flag.Uint64("bufsize", 100, "size of the buffer with input file lines")
-	debugFlag     = flag.Bool("debug", false, "enable debug output")
+	inputFileFlag     = flag.String("input_file_path", "", "path to input file")
+	bufSizeFlag       = flag.Uint64("buffer_size_mb", 1, "size of the input and output buffers for input and output files")
+	parserBufSizeFlag = flag.Uint64("parser_buffer_size_lines", 100, "size of the buffer with parsed lines")
+	debugFlag         = flag.Bool("debug", false, "enable debug output")
 )
 
 func main() {
@@ -26,7 +32,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	bufSize := *bufSizeFlag
+	bufSize := *bufSizeFlag * bytesInMB
+	if bufSize < 1 {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	parserBufSize := *parserBufSizeFlag
 	if bufSize < 1 {
 		flag.Usage()
 		os.Exit(1)
@@ -34,49 +46,83 @@ func main() {
 
 	f, err := os.Open(filename)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		os.Exit(1)
+		os.Exit(printErr(err))
 	}
-	defer f.Close() // nolint: errcheck
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	parser := parser.NewIOParser(bufSize, parserBufSize, *debugFlag)
 
-	scan := bufio.NewScanner(f)
-	parser := parser.NewStreamParser(bufSize, *debugFlag, *debugFlag)
+	g, _ := errgroup.WithContext(context.Background())
+	g.Go(func() error {
+		defer parser.Close() // nolint: errcheck
+		defer f.Close()      // nolint: errcheck
 
-	go func() {
-		if err := parser.Start(ctx); err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			os.Exit(1)
-		}
+		var (
+			buf  = make([]byte, bufSize)
+			done = false
+		)
 
-		defer parser.Stop(ctx) // nolint: errcheck
+		for {
+			n, err := f.Read(buf)
+			if err != nil {
+				if err != io.EOF {
+					return err
+				}
 
-		for scan.Scan() {
-			line := scan.Text()
+				if n == 0 {
+					return nil
+				}
 
-			if err := parser.Write(ctx, line); err != nil {
-				fmt.Fprintln(os.Stderr, err.Error())
-				os.Exit(1)
+				done = true
+			}
+
+			if _, err := parser.Write(buf[:n]); err != nil {
+				return err
+			}
+
+			if done {
+				return nil
 			}
 		}
+	})
 
-		if err := scan.Err(); err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			os.Exit(1)
+	g.Go(func() error {
+		var (
+			buf  = make([]byte, bufSize)
+			done = false
+		)
+
+		for {
+			n, err := parser.Read(buf)
+			if err != nil {
+				if err != io.EOF {
+					return err
+				}
+
+				if n == 0 {
+					return nil
+				}
+
+				done = true
+			}
+
+			if _, err := os.Stdout.Write(buf[:n]); err != nil {
+				return err
+			}
+
+			if done {
+				return nil
+			}
 		}
-	}()
+	})
 
-	for u := range parser.Results() {
-		out, err := json.Marshal(u)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			os.Exit(1)
-		}
-
-		fmt.Fprintln(os.Stdout, string(out))
+	if err := g.Wait(); err != nil {
+		os.Exit(printErr(err))
 	}
 
 	os.Exit(0)
+}
+
+func printErr(err error) int {
+	fmt.Fprintf(os.Stderr, "parser encountered an error: %s\n", err.Error())
+	return 1
 }

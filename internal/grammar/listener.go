@@ -76,11 +76,17 @@ func (l *NluRuleListener) ExitEntity(c *EntityContext) {
 }
 
 func (l *NluRuleListener) EnterIntent_name(c *Intent_nameContext) {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
 	l.utterance.Intent = c.WORD().GetText()
 	l.utterance.IntentBIO = IntentTagBeginning
 }
 
 func (l *NluRuleListener) ExitReply(c *ReplyContext) {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
 	l.utterance.Intent = ""
 }
 

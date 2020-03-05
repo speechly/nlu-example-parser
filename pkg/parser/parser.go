@@ -6,34 +6,46 @@ import (
 	"speechly/nlu-example-parser/internal/grammar"
 )
 
-// ParseAsync processes input strings in a streaming fashion.
-// It assumes that a single string passed through the input channel contains a parseable utterance.
-//
-// TODO: combine logDiagnostics and verbose into a ternary log level.
-func ParseAsync(in <-chan string, logDiagnostics bool, verbose bool) <-chan grammar.Utterance {
-	listener := grammar.NewNluRuleListener(1, logDiagnostics)
+type Parser struct {
+	lis   *grammar.NluRuleListener
+	debug bool
+}
 
-	go func() {
-		defer listener.Close()
+func NewParser(debug bool) *Parser {
+	return NewBufferedParser(1, debug)
+}
 
-		for str := range in {
-			stream := antlr.NewCommonTokenStream(
-				grammar.NewAnnotationGrammarLexer(
-					antlr.NewInputStream(str),
-				),
-				0,
-			)
+func NewBufferedParser(bufSize uint64, debug bool) *Parser {
+	return &Parser{
+		lis:   grammar.NewNluRuleListener(bufSize, debug),
+		debug: debug,
+	}
+}
 
-			p := grammar.NewAnnotationGrammarParser(stream)
-			p.BuildParseTrees = true
+// TODO: we should work on implementing a custom `antrl.CharStream`,
+// instead of re-creating ANTLR machinery for every line of text.
+func (p *Parser) Parse(line string) {
+	stream := antlr.NewCommonTokenStream(
+		grammar.NewAnnotationGrammarLexer(
+			antlr.NewInputStream(line),
+		),
+		0,
+	)
 
-			if logDiagnostics {
-				p.AddErrorListener(antlr.NewDiagnosticErrorListener(verbose))
-			}
+	parse := grammar.NewAnnotationGrammarParser(stream)
+	parse.BuildParseTrees = true
 
-			antlr.ParseTreeWalkerDefault.Walk(listener, p.Annotation())
-		}
-	}()
+	if p.debug {
+		parse.AddErrorListener(antlr.NewDiagnosticErrorListener(p.debug))
+	}
 
-	return listener.Utterances()
+	antlr.ParseTreeWalkerDefault.Walk(p.lis, parse.Annotation())
+}
+
+func (p *Parser) Results() <-chan grammar.Utterance {
+	return p.lis.Utterances()
+}
+
+func (p *Parser) Close() {
+	p.lis.Close()
 }

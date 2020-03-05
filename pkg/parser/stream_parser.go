@@ -5,12 +5,10 @@ import (
 	"errors"
 
 	"speechly/nlu-example-parser/internal/grammar"
-
-	"github.com/antlr/antlr4/runtime/Go/antlr"
 )
 
 type StreamParser struct {
-	lis            *grammar.NluRuleListener
+	parse          *Parser
 	ch             chan string
 	done           chan struct{}
 	debug, verbose bool
@@ -18,7 +16,7 @@ type StreamParser struct {
 
 func NewStreamParser(bufSize uint64, debug bool, verbose bool) *StreamParser {
 	return &StreamParser{
-		lis:     grammar.NewNluRuleListener(bufSize, debug),
+		parse:   NewParser(debug),
 		ch:      make(chan string, bufSize),
 		done:    make(chan struct{}),
 		debug:   debug,
@@ -29,32 +27,18 @@ func NewStreamParser(bufSize uint64, debug bool, verbose bool) *StreamParser {
 func (s *StreamParser) Start(ctx context.Context) error {
 	go func() {
 		defer close(s.done)
-		defer s.lis.Close()
+		defer s.parse.Close()
 
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case str, more := <-s.ch:
+			case line, more := <-s.ch:
 				if !more {
 					return
 				}
 
-				stream := antlr.NewCommonTokenStream(
-					grammar.NewAnnotationGrammarLexer(
-						antlr.NewInputStream(str),
-					),
-					0,
-				)
-
-				p := grammar.NewAnnotationGrammarParser(stream)
-				p.BuildParseTrees = true
-
-				if s.debug {
-					p.AddErrorListener(antlr.NewDiagnosticErrorListener(s.verbose))
-				}
-
-				antlr.ParseTreeWalkerDefault.Walk(s.lis, p.Annotation())
+				s.parse.Parse(line)
 			}
 		}
 	}()
@@ -85,5 +69,5 @@ func (s *StreamParser) Write(ctx context.Context, line string) error {
 }
 
 func (s *StreamParser) Results() <-chan grammar.Utterance {
-	return s.lis.Utterances()
+	return s.parse.Results()
 }
