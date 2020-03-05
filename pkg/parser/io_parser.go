@@ -3,6 +3,7 @@ package parser
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"sync"
 )
@@ -11,6 +12,8 @@ const (
 	newline    = '\n'
 	newlineLen = 1
 )
+
+var errEmptyBuffer = errors.New("cannot handle an empty buffer")
 
 type IOParser struct {
 	inputBuffer  []byte
@@ -36,7 +39,7 @@ func (p *IOParser) Read(b []byte) (int, error) {
 
 	// Quick escape for empty buffers.
 	if buflen == 0 {
-		return 0, nil
+		return 0, errEmptyBuffer
 	}
 
 	// Copy as much as we can from output buffer to b.
@@ -83,16 +86,17 @@ func (p *IOParser) Write(b []byte) (int, error) {
 	p.inputLock.Lock()
 	defer p.inputLock.Unlock()
 
-	written := 0
+	var (
+		buflen  = len(b)
+		written = 0
+	)
+
+	// Quick check for empty buffer.
+	if buflen == 0 {
+		return written, errEmptyBuffer
+	}
 
 	for {
-		buflen := len(b)
-
-		// Quick check for empty buffer.
-		if buflen == 0 {
-			return written, nil
-		}
-
 		// Check if incoming buffer contains a newline,
 		// since it indicates that we can now send the utterance to AST parser.
 		linesep := bytes.IndexRune(b, newline)
@@ -106,10 +110,9 @@ func (p *IOParser) Write(b []byte) (int, error) {
 
 		// Split the buffer by the newline character.
 		// Head contains the bytes [0 : newlineIndex]
-		// Re-slice the buffer to make sure we are progressively moving forward on it.
 		head := b[:linesep]
-		b = b[linesep+newlineLen:]
 
+		// Check if we need to append input buffer to the head to get the full line.
 		var line string
 		if len(p.inputBuffer) == 0 {
 			line = string(head)
@@ -122,6 +125,14 @@ func (p *IOParser) Write(b []byte) (int, error) {
 
 		p.parse.Parse(line)
 		written += len(head) + newlineLen
+
+		// Re-slice the buffer to make sure we are progressively moving forward on it.
+		b = b[linesep+newlineLen:]
+		buflen = len(b)
+
+		if buflen == 0 {
+			return written, nil
+		}
 	}
 }
 
