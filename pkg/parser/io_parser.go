@@ -33,26 +33,26 @@ func (p *IOParser) Read(b []byte) (int, error) {
 	defer p.outputLock.Unlock()
 
 	var (
-		bufcap    = cap(b)
+		buflen    = len(b)
 		outbuflen = len(p.outputBuffer)
 	)
 
 	// If somehow we have exactly cap(b) in output buffer, just copy and return.
-	if outbuflen == bufcap {
+	if outbuflen == buflen {
 		copy(b, p.outputBuffer)
 		p.outputBuffer = p.outputBuffer[:0]
-		return bufcap, nil
+		return buflen, nil
 	}
 
 	// If we have more than cap(b), copy, resize and return.
-	if outbuflen > bufcap {
-		copy(b, p.outputBuffer[:bufcap])
+	if outbuflen > buflen {
+		copy(b, p.outputBuffer[:buflen])
 
 		// Proper way to resize the slice without losing it's length
-		copy(p.outputBuffer, p.outputBuffer[bufcap:])
-		p.outputBuffer = p.outputBuffer[:outbuflen-bufcap]
+		copy(p.outputBuffer, p.outputBuffer[buflen:])
+		p.outputBuffer = p.outputBuffer[:outbuflen-buflen]
 
-		return bufcap, nil
+		return buflen, nil
 	}
 
 	// Not enough data left in output buffer, so drain it unconditionally.
@@ -76,13 +76,13 @@ func (p *IOParser) Read(b []byte) (int, error) {
 
 		var (
 			datalen = len(data)
-			capleft = bufcap - written
+			capleft = buflen - written
 		)
 
 		// We have exactly enough data to fill in the rest of the buffer, so copy and return.
 		if datalen == capleft {
 			copy(b[written:], data)
-			return bufcap, nil
+			return buflen, nil
 		}
 
 		// We have more data to write than we can fit in the output.
@@ -90,7 +90,7 @@ func (p *IOParser) Read(b []byte) (int, error) {
 		if datalen > capleft {
 			copy(b[written:], data[:capleft])
 			p.outputBuffer = append(p.outputBuffer, data[capleft:]...)
-			return bufcap, nil
+			return buflen, nil
 		}
 
 		// We can fit more than we have available for writing.
