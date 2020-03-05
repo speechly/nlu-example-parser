@@ -1,4 +1,4 @@
-module speechly/nlu-example-parser
+module github.com/speechly/nlu-example-parser
 
 go 1.13
 

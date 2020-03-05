@@ -3,7 +3,7 @@ package parser
 import (
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 
-	"speechly/nlu-example-parser/internal/grammar"
+	"github.com/speechly/nlu-example-parser/internal/grammar"
 )
 
 type Parser struct {
