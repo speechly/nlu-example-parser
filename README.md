@@ -35,10 +35,17 @@ You can check out [some example rules](examples/test_multi_intent_data.md) and [
 Pre-built binaries are automatically compiled on every release - https://github.com/speechly/nlu-example-parser/releases, you can download them using e.g. `curl`:
 
 ```sh
+# amd64 or 386
 $ export ARCH="amd64"
+
+# darwin, linux, freebsd
 $ export PLATFORM="darwin"
-$ export VERSION="v0.1.0"
-$ export FILENAME="speechly-nluexamplesparser-${VERSION}-${PLATFORM}-${ARCH}.tar.gz"
+
+# for latest version just use "latest"
+$ export VERSION="v0.2.0"
+
+# Download and unpack
+$ export FILENAME="speechly-nluexamplesparser-${PLATFORM}-${ARCH}.tar.gz"
 $ curl -LJO https://github.com/speechly/nlu-example-parser/releases/download/${VERSION}/${FILENAME}
 $ tar -xzf ${FILENAME}
 ```

@@ -1,8 +1,10 @@
-ANTLR_JAR	:= ./tools/antlr-4.8-complete.jar
 GOPKGS		:= $(shell go list ./... | grep -v "/test")
-GOOS			:= darwin
-GOARCH		:= amd64
-GONAME		:= ./bin/parser
+
+BUILDOS		:= darwin
+BUILDARCH	:= amd64
+BUILDNAME	:= ./bin/parser
+
+ANTLR_JAR	:= ./tools/antlr-4.8-complete.jar
 
 all: compile-grammar test build verify
 .PHONY: all
@@ -19,10 +21,10 @@ static-build:
 	CGO_ENABLED=0 go build -o ./bin/golden ./cmd/parser
 .PHONY: static-build
 
-build: $(GONAME)
+build: $(BUILDNAME)
 
-$(GONAME): compile-grammar
-	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(GONAME) ./cmd/parser
+$(BUILDNAME): compile-grammar
+	CGO_ENABLED=0 GOOS=$(BUILDOS) GOARCH=$(BUILDARCH) go build -o $(BUILDNAME) ./cmd/parser
 
 compile-grammar: $(ANTLR_JAR)
 	java -jar $(ANTLR_JAR) -Dlanguage=Go -package grammar internal/grammar/AnnotationGrammar.g4
