@@ -40,13 +40,15 @@ $ export ARCH="amd64"
 
 # darwin, linux, freebsd
 $ export PLATFORM="darwin"
-
-# for latest version just use "latest"
-$ export VERSION="v0.2.0"
-
-# Download and unpack
 $ export FILENAME="speechly-nluexamplesparser-${PLATFORM}-${ARCH}.tar.gz"
+
+# If you want specific version
+$ export VERSION="v0.2.0"
 $ curl -LJO https://github.com/speechly/nlu-example-parser/releases/download/${VERSION}/${FILENAME}
+
+# Or if you want just the latest
+$ curl -LJO https://github.com/speechly/nlu-example-parser/releases/latest/download/${PARSER}
+
 $ tar -xzf ${FILENAME}
 ```
 
