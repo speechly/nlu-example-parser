@@ -63,7 +63,7 @@ $ cd nlu-example-parser
 $ make build
 
 # Run it
-$ ./bin/parser -input-file-path ./examples/test_multi_intent_data.md
+$ ./bin/parser -input_file_path ./examples/test_multi_intent_data.md
 ```
 
 ### Go library
