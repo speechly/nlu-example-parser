@@ -11,7 +11,7 @@ The parser can be used as a standalone command-line client or included in other 
 Get the parser, a file with examples and run it:
 
 ```sh
-nlu-example-parser -input-file-path nlu-examples.md > output.json
+nlu-example-parser -input_file_path nlu-examples.md > output.json
 ```
 
 More CLI options available, you can tune the performance / memory usage or enable debug output:
