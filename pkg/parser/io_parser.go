@@ -147,6 +147,17 @@ func (p *IOParser) Write(b []byte) (int, error) {
 }
 
 func (p *IOParser) Close() error {
+	p.inputLock.Lock()
+	defer p.inputLock.Unlock()
+
+	// Calling `Close` signifies the EOF,
+	// so flush whatever is left in the input buffer to the parser,
+	// and then zero out the input buffer.
+	if len(p.inputBuffer) != 0 {
+		p.parse.Parse(string(p.inputBuffer))
+		p.inputBuffer = p.inputBuffer[:0]
+	}
+
 	p.parse.Close()
 	return nil
 }
