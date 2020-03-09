@@ -11,7 +11,7 @@ The parser can be used as a standalone command-line client or included in other 
 Get the parser, a file with examples and run it:
 
 ```sh
-nlu-example-parser -input-file-path nlu-examples.md > output.json
+nlu-example-parser -input_file_path nlu-examples.md > output.json
 ```
 
 More CLI options available, you can tune the performance / memory usage or enable debug output:
@@ -40,13 +40,15 @@ $ export ARCH="amd64"
 
 # darwin, linux, freebsd
 $ export PLATFORM="darwin"
-
-# for latest version just use "latest"
-$ export VERSION="v0.2.0"
-
-# Download and unpack
 $ export FILENAME="speechly-nluexamplesparser-${PLATFORM}-${ARCH}.tar.gz"
+
+# If you want specific version
+$ export VERSION="v0.2.0"
 $ curl -LJO https://github.com/speechly/nlu-example-parser/releases/download/${VERSION}/${FILENAME}
+
+# Or if you want just the latest
+$ curl -LJO https://github.com/speechly/nlu-example-parser/releases/latest/download/${PARSER}
+
 $ tar -xzf ${FILENAME}
 ```
 
@@ -61,7 +63,7 @@ $ cd nlu-example-parser
 $ make build
 
 # Run it
-$ ./bin/parser -input-file-path ./examples/test_multi_intent_data.md
+$ ./bin/parser -input_file_path ./examples/test_multi_intent_data.md
 ```
 
 ### Go library
