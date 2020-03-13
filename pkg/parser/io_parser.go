@@ -22,18 +22,36 @@ type IOParser struct {
 	outputLock   sync.Mutex
 	parse        *Parser
 	bufSize      uint64
+	errs []error
 }
 
 func NewIOParser(bufSize uint64, parserBufSize uint64, debug bool) *IOParser {
-	return &IOParser{
+	p := &IOParser{
 		inputBuffer:  make([]byte, 0, bufSize),
 		outputBuffer: make([]byte, 0, bufSize),
 		parse:        NewBufferedParser(parserBufSize, debug),
 		bufSize:      bufSize,
 	}
+	p.handleErrs()
+	return p
 }
 
+func (p *IOParser) handleErrs() {
+	go func() {
+		for  {
+			// TODO: lock
+			e := p.parse.Errors()
+			p.errs = append(p.errs , e)
+		}
+	}()
+ }
+
 func (p *IOParser) Read(b []byte) (int, error) {
+		// TODO: lock
+		if (len(p.errs) > 0) {
+			return 0, p.errs
+		}
+
 	p.outputLock.Lock()
 	defer p.outputLock.Unlock()
 

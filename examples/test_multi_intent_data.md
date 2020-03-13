@@ -1,2 +1,2 @@
-*change change the [kitchen door    knobs](object)! *_ and *remove remove  the [table](object)
+.change change the [kitchen door    knobs](object)! *_ and *remove remove  the [table](object)
 *move change the [desk](object) position [1.5 meters left](direction) *_ and *add add 100 [windows](object)
