@@ -47,7 +47,7 @@ func NewBufferedParser(bufSize uint64, debug bool) *Parser {
 	return &Parser{
 		lis:   grammar.NewNluRuleListener(bufSize, debug),
 		debug: debug,
-		errLis: NluParsingErrorListener(),
+		errLis: NewNluParsingErrorListener(),
 	}
 }
 
@@ -68,7 +68,7 @@ func (p *Parser) Parse(line string) {
 		parse.AddErrorListener(antlr.NewDiagnosticErrorListener(p.debug))
 	}
 
-	parse.AddErrorListener(errLis)
+	parse.AddErrorListener(p.errLis)
 
 	antlr.ParseTreeWalkerDefault.Walk(p.lis, parse.Annotation())
 }
