@@ -1,0 +1,6 @@
+{"error":"SyntaxError: extraneous input '.change' expecting {'*', WHITESPACE} 1:0"}
+{"error":"SyntaxError: extraneous input 'change' expecting {'*', WHITESPACE} 1:8"}
+{"error":"SyntaxError: extraneous input 'the' expecting {'*', WHITESPACE} 1:15"}
+{"error":"SyntaxError: extraneous input '[' expecting {'*', WHITESPACE} 1:19"}
+{"error":"SyntaxError: extraneous input 'door' expecting {'*', WHITESPACE} 1:28"}
+{"error":"SyntaxError: extraneous input 'knobs' expecting {'*', WHITESPACE} 1:36"}

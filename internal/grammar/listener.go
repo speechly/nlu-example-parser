@@ -1,23 +1,20 @@
 package grammar
 
 import (
-	"fmt"
 	"sync"
 )
 
 type NluRuleListener struct {
 	BaseAnnotationGrammarListener
 	utterance Utterance
-	debug     bool
 	output    chan Utterance
 	lock      sync.Mutex
 }
 
-func NewNluRuleListener(bufSize uint64, debug bool) *NluRuleListener {
+func NewNluRuleListener(bufSize uint16) *NluRuleListener {
 	return &NluRuleListener{
 		output:    make(chan Utterance, bufSize),
 		utterance: NewUtterance(),
-		debug:     debug,
 	}
 }
 
@@ -32,6 +29,10 @@ func (l *NluRuleListener) ExitUtterance(c *UtteranceContext) {
 func (l *NluRuleListener) EnterText(c *TextContext) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
+
+	if c == nil {
+		return
+	}
 
 	node := Node{
 		Text: c.GetText(),
@@ -57,11 +58,13 @@ func (l *NluRuleListener) EnterEntity(c *EntityContext) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 
+	if c == nil {
+		return
+	}
+
 	e := c.Entity_name()
 	entityName, ok := e.(*Entity_nameContext)
-
-	if (!ok || entityName == nil) && l.debug {
-		fmt.Printf("failed to parse entity name: %+v\n", e)
+	if !ok || entityName == nil {
 		return
 	}
 
@@ -78,6 +81,10 @@ func (l *NluRuleListener) ExitEntity(c *EntityContext) {
 func (l *NluRuleListener) EnterIntent_name(c *Intent_nameContext) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
+
+	if c == nil {
+		return
+	}
 
 	l.utterance.Intent = c.WORD().GetText()
 	l.utterance.IntentBIO = IntentTagBeginning

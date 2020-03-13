@@ -15,6 +15,7 @@ test:
 
 verify: static-build
 	./bin/golden -input_file_path ./examples/test_multi_intent_data.md | diff - test/golden.json
+	./bin/golden -input_file_path ./examples/test_incorrect_data.md 2>&1 | diff - test/golden_error
 .PHONY: verify
 
 static-build:

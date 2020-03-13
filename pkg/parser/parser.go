@@ -7,18 +7,18 @@ import (
 )
 
 type Parser struct {
-	lis   *grammar.NluRuleListener
-	debug bool
+	lis    *grammar.NluRuleListener
+	errLis *grammar.NLUExampleErrorListener
 }
 
-func NewParser(debug bool) *Parser {
-	return NewBufferedParser(1, debug)
+func NewParser() *Parser {
+	return NewBufferedParser(1)
 }
 
-func NewBufferedParser(bufSize uint64, debug bool) *Parser {
+func NewBufferedParser(bufSize uint16) *Parser {
 	return &Parser{
-		lis:   grammar.NewNluRuleListener(bufSize, debug),
-		debug: debug,
+		lis:    grammar.NewNluRuleListener(bufSize),
+		errLis: grammar.NewNLUExampleErrorListener(bufSize, false),
 	}
 }
 
@@ -33,11 +33,9 @@ func (p *Parser) Parse(line string) {
 	)
 
 	parse := grammar.NewAnnotationGrammarParser(stream)
+	parse.RemoveErrorListeners()
+	parse.AddErrorListener(p.errLis)
 	parse.BuildParseTrees = true
-
-	if p.debug {
-		parse.AddErrorListener(antlr.NewDiagnosticErrorListener(p.debug))
-	}
 
 	antlr.ParseTreeWalkerDefault.Walk(p.lis, parse.Annotation())
 }
@@ -48,4 +46,9 @@ func (p *Parser) Results() <-chan grammar.Utterance {
 
 func (p *Parser) Close() {
 	p.lis.Close()
+	p.errLis.Close()
+}
+
+func (p *Parser) Errors() <-chan grammar.ParseError {
+	return p.errLis.Errors()
 }

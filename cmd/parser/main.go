@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/speechly/nlu-example-parser/pkg/parser"
 
@@ -19,8 +20,7 @@ const (
 var (
 	inputFileFlag     = flag.String("input_file_path", "", "path to input file")
 	bufSizeFlag       = flag.Uint64("buffer_size_mb", 1, "size of the input and output buffers for input and output files")
-	parserBufSizeFlag = flag.Uint64("parser_buffer_size_lines", 100, "size of the buffer with parsed lines")
-	debugFlag         = flag.Bool("debug", false, "enable debug output")
+	parserBufSizeFlag = flag.Uint("parser_buffer_size_lines", 100, "size of the buffer with parsed lines")
 )
 
 func main() {
@@ -49,7 +49,7 @@ func main() {
 		os.Exit(printErr(err))
 	}
 
-	parser := parser.NewIOParser(bufSize, parserBufSize, *debugFlag)
+	parser := parser.NewIOParser(bufSize, uint16(parserBufSize))
 
 	g, _ := errgroup.WithContext(context.Background())
 	g.Go(func() error {
@@ -123,6 +123,9 @@ func main() {
 }
 
 func printErr(err error) int {
-	fmt.Fprintf(os.Stderr, "parser encountered an error: %s\n", err.Error())
+	for _, l := range strings.Split(err.Error(), "\n") {
+		fmt.Fprintf(os.Stderr, "{\"error\":\"%s\"}\n", l)
+	}
+
 	return 1
 }

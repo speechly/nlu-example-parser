@@ -16,7 +16,7 @@ type StreamParser struct {
 
 func NewStreamParser(bufSize uint64, debug bool, verbose bool) *StreamParser {
 	return &StreamParser{
-		parse:   NewParser(debug),
+		parse:   NewParser(),
 		ch:      make(chan string, bufSize),
 		done:    make(chan struct{}),
 		debug:   debug,
