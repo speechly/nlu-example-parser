@@ -22,8 +22,6 @@ Usage of nlu-example-parser:
     path to input file (required)
   -buffer_size_mb uint
     size of the input and output buffers for input and output files (default 1)
-  -debug bool
-    enable debug output (default false)
   -parser_buffer_size_lines uint
     size of the buffer with parsed lines (default 100)
 ```
@@ -90,13 +88,12 @@ import (
 )
 
 const (
-	debug         = false
 	testUtterance = "*change change the [kitchen door    knobs](object)! *_ and *remove remove  the [table](object)"
 )
 
 func main() {
 	// Create a new parser.
-	p := parser.NewParser(debug)
+	p := parser.NewParser()
 
 	// Consume the results.
 	done := make(chan struct{})
@@ -134,7 +131,6 @@ import (
 
 const (
 	bufSize = 10
-	debug   = false
 	verbose = false
 
 	testUtterance = "*change change the [kitchen door    knobs](object)! *_ and *remove remove  the [table](object)"
@@ -144,7 +140,7 @@ func main() {
 	ctx := context.Background()
 
 	// Create a new parser.
-	p := parser.NewStreamParser(bufSize, debug, verbose)
+	p := parser.NewStreamParser(bufSize, verbose)
 
 	// Start the parser.
 	if err := p.Start(ctx); err != nil {
@@ -189,7 +185,6 @@ import (
 const (
 	bufSize       = 10
 	parserBufSize = 10
-	debug         = false
 
 	testUtterance = "*change change the [kitchen door    knobs](object)! *_ and *remove remove  the [table](object)\n"
 )
@@ -198,7 +193,7 @@ func main() {
 	var wg sync.WaitGroup
 
 	r := strings.NewReader(testUtterance)
-	parser := parser.NewIOParser(bufSize, parserBufSize, debug)
+	parser := parser.NewIOParser(bufSize, parserBufSize)
 
 	wg.Add(1)
 	go func() {

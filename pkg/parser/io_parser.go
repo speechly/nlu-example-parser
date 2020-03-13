@@ -2,10 +2,13 @@ package parser
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"sync"
+
+	"github.com/speechly/nlu-example-parser/internal/grammar"
 )
 
 const (
@@ -22,35 +25,49 @@ type IOParser struct {
 	outputLock   sync.Mutex
 	parse        *Parser
 	bufSize      uint64
-	errs []error
+	errLock      sync.Mutex
+	parseErr     grammar.ParseError
+	ctx          context.Context
+	cancel       context.CancelFunc
 }
 
-func NewIOParser(bufSize uint64, parserBufSize uint64, debug bool) *IOParser {
+func NewIOParser(bufSize uint64, parserBufSize uint16) *IOParser {
+	ctx, cancel := context.WithCancel(context.Background())
 	p := &IOParser{
 		inputBuffer:  make([]byte, 0, bufSize),
 		outputBuffer: make([]byte, 0, bufSize),
-		parse:        NewBufferedParser(parserBufSize, debug),
+		parse:        NewBufferedParser(parserBufSize),
 		bufSize:      bufSize,
+		ctx:          ctx,
+		cancel:       cancel,
 	}
+
 	p.handleErrs()
+
 	return p
 }
 
 func (p *IOParser) handleErrs() {
 	go func() {
-		for  {
-			// TODO: lock
-			e := p.parse.Errors()
-			p.errs = append(p.errs , e)
+		for {
+			select {
+			case e, more := <-p.parse.Errors():
+				if !more {
+					return
+				}
+
+				p.saveErr(e)
+			case <-p.ctx.Done():
+				return
+			}
 		}
 	}()
- }
+}
 
 func (p *IOParser) Read(b []byte) (int, error) {
-		// TODO: lock
-		if (len(p.errs) > 0) {
-			return 0, p.errs
-		}
+	if err := p.checkErr(); err != nil {
+		return 0, err
+	}
 
 	p.outputLock.Lock()
 	defer p.outputLock.Unlock()
@@ -80,6 +97,10 @@ func (p *IOParser) Read(b []byte) (int, error) {
 
 	// Loop until we have either exhausted the parser OR the buffer.
 	for {
+		if err := p.checkErr(); err != nil {
+			return written, err
+		}
+
 		res, more := <-p.parse.Results()
 		if !more {
 			return written, io.EOF
@@ -111,6 +132,10 @@ func (p *IOParser) Read(b []byte) (int, error) {
 }
 
 func (p *IOParser) Write(b []byte) (int, error) {
+	if err := p.checkErr(); err != nil {
+		return 0, err
+	}
+
 	p.inputLock.Lock()
 	defer p.inputLock.Unlock()
 
@@ -125,6 +150,10 @@ func (p *IOParser) Write(b []byte) (int, error) {
 	}
 
 	for {
+		if err := p.checkErr(); err != nil {
+			return written, err
+		}
+
 		// Check if incoming buffer contains a newline,
 		// since it indicates that we can now send the utterance to AST parser.
 		linesep := bytes.IndexRune(b, newline)
@@ -177,5 +206,25 @@ func (p *IOParser) Close() error {
 	}
 
 	p.parse.Close()
+	p.cancel()
+
 	return nil
+}
+
+func (p *IOParser) checkErr() error {
+	p.errLock.Lock()
+	defer p.errLock.Unlock()
+
+	if p.parseErr.Len() > 0 {
+		return p.parseErr
+	}
+
+	return nil
+}
+
+func (p *IOParser) saveErr(e grammar.ParseError) {
+	p.errLock.Lock()
+	defer p.errLock.Unlock()
+
+	p.parseErr.Append(e)
 }

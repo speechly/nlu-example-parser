@@ -6,48 +6,19 @@ import (
 	"github.com/speechly/nlu-example-parser/internal/grammar"
 )
 
-
-type NluParsingErrorListener struct {
-	errors int
-}
-
-func (l *NluParsingErrorListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
-	l.errors += 1
-}
-
-func (l *NluParsingErrorListener) ReportAmbiguity(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex int, exact bool, ambigAlts *antlr.BitSet, configs antlr.ATNConfigSet) {
-	l.errors += 1
-}
-
-func (l *NluParsingErrorListener) ReportAttemptingFullContext(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex int, conflictingAlts *antlr.BitSet, configs antlr.ATNConfigSet) {
-	l.errors += 1
-}
-
-func (l *NluParsingErrorListener) ReportContextSensitivity(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex, prediction int, configs antlr.ATNConfigSet) {
-	l.errors += 1
-}
-
-func NewNluParsingErrorListener() *NluParsingErrorListener {
-	return &NluParsingErrorListener{
-		errors: 0,
-	}
-}
-
 type Parser struct {
-	lis   *grammar.NluRuleListener
-	debug bool
-	errLis NluParsingErrorListener
+	lis    *grammar.NluRuleListener
+	errLis *grammar.NLUExampleErrorListener
 }
 
-func NewParser(debug bool) *Parser {
-	return NewBufferedParser(1, debug)
+func NewParser() *Parser {
+	return NewBufferedParser(1)
 }
 
-func NewBufferedParser(bufSize uint64, debug bool) *Parser {
+func NewBufferedParser(bufSize uint16) *Parser {
 	return &Parser{
-		lis:   grammar.NewNluRuleListener(bufSize, debug),
-		debug: debug,
-		errLis: NewNluParsingErrorListener(),
+		lis:    grammar.NewNluRuleListener(bufSize),
+		errLis: grammar.NewNLUExampleErrorListener(bufSize, false),
 	}
 }
 
@@ -62,13 +33,9 @@ func (p *Parser) Parse(line string) {
 	)
 
 	parse := grammar.NewAnnotationGrammarParser(stream)
-	parse.BuildParseTrees = true
-
-	if p.debug {
-		parse.AddErrorListener(antlr.NewDiagnosticErrorListener(p.debug))
-	}
-
+	parse.RemoveErrorListeners()
 	parse.AddErrorListener(p.errLis)
+	parse.BuildParseTrees = true
 
 	antlr.ParseTreeWalkerDefault.Walk(p.lis, parse.Annotation())
 }
@@ -82,6 +49,6 @@ func (p *Parser) Close() {
 	p.errLis.Close()
 }
 
-func (p *Parser) Errors() <-chan error {
-	return p.errLis.Errs()
+func (p *Parser) Errors() <-chan grammar.ParseError {
+	return p.errLis.Errors()
 }
