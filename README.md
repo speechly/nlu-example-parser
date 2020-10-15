@@ -1,6 +1,8 @@
+# <a href="https://www.speechly.com/"><img src="https://www.speechly.com/images/logo.png" height="100" alt="Speechly"></a>
+
 # Speechly NLU example parser
 
-This repository contains the grammar definitions for Speechly NLU examples and an AST parser for these rules, written in Go.
+This repository contains the grammar definitions for [Speechly](https://www.speechly.com) NLU examples and an AST parser for these rules, written in Go.
 
 The parser can be used as a standalone command-line client or included in other Go projects as a library.
 
@@ -219,3 +221,9 @@ func main() {
 	os.Exit(0)
 }
 ```
+
+## More information
+
+To learn more about Speechly, you can refer to these resources:
+- [Speechly Docs](https://www.speechly.com/docs/)
+- [Speechly Quick Start](https://www.speechly.com/docs/quick-start/)
